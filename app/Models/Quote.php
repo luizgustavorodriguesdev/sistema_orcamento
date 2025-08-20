@@ -1,22 +1,21 @@
 <?php
+// app/Models/Quote.php
 
-namespace App\Models;
+namespace App\Models; // <-- VERIFIQUE SE ESTÁ CORRETO
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; // Importe a classe
-use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importe a classe
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Client; // <-- ADICIONE ESTA LINHA
 
 class Quote extends Model
 {
-    /**
-     * Atributos que podem ser preenchidos em massa.
-     */
-    
+    use HasFactory;
+
     protected $fillable = [
         'unique_hash',
-        'client_name',
-        'client_contact',
+        'client_id', // Adicione esta linha
         'user_id',
         'status',
         'total_amount',
@@ -24,22 +23,23 @@ class Quote extends Model
         'delivery_info',
     ];
 
-    /**
-     * RELACIONAMENTO: Um orçamento pertence a um usuário (vendedor).
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * RELACIONAMENTO: Um orçamento pode ter muitos produtos.
-     */
     public function products(): BelongsToMany
     {
-        // A relação é 'belongsToMany' (muitos para muitos) com a tabela Product.
         return $this->belongsToMany(Product::class, 'quote_product')
                     ->withPivot('quantity', 'unit_price')
                     ->withTimestamps();
+    }
+
+    /**
+     * RELAÇÃO: Um orçamento pertence a um cliente.
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
     }
 }

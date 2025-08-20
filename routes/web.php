@@ -3,6 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController; // Adicione esta linha
 use App\Http\Controllers\QuoteController; // Certifique-se de que QuoteController está importado corretamente
+use App\Http\Controllers\ClientController; // Adicione esta linha
+use App\Http\Controllers\UserController; // Adicione esta linha
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia; // Adicione esta linha no topo do ficheiro
 
@@ -26,8 +28,14 @@ Route::middleware('auth')->group(function () {
     // O método resource() cria todas as rotas necessárias para o CRUD de uma vez.
     Route::resource('products', ProductController::class);
 
-    // Nossas novas rotas de orçamentos
+    // rotas de orçamentos
     Route::resource('quotes', QuoteController::class);
+
+    // Rota para usuarios
+    Route::resource('users', UserController::class);
+
+    // Rota Cliente
+    Route::resource('clients', ClientController::class); // Adicione esta linha
 });
 
 require __DIR__.'/auth.php';
