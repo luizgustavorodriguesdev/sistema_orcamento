@@ -1,12 +1,15 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ProductController; // Adicione esta linha
-use App\Http\Controllers\QuoteController; // Certifique-se de que QuoteController está importado corretamente
-use App\Http\Controllers\ClientController; // Adicione esta linha
-use App\Http\Controllers\UserController; // Adicione esta linha
+use App\Http\Controllers\ProductController; 
+use App\Http\Controllers\QuoteController; 
+use App\Http\Controllers\ClientController; 
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia; // Adicione esta linha no topo do ficheiro
+use Inertia\Inertia; 
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -35,7 +38,14 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class);
 
     // Rota Cliente
-    Route::resource('clients', ClientController::class); // Adicione esta linha
+    Route::resource('clients', ClientController::class);
+
+    // Rota Meios de Pagamento
+    Route::resource('payment-methods', PaymentMethodController::class);
+
+    // Rota Configurações
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SettingController::class, 'store'])->name('settings.store');
 });
 
 require __DIR__.'/auth.php';

@@ -1,76 +1,83 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Modal from '@/Components/Modal.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue'; // Importamos ref e computed para a reatividade
+import { ref, computed, watch } from 'vue';
 
-// O nosso controller passa a lista completa de produtos como uma prop.
+// O controller passa todas as listas necessárias como props.
 const props = defineProps({
     products: Array,
+    clients: Array,
+    paymentMethods: Array,
 });
 
-// Usamos o 'useForm' do Inertia para gerir os dados principais do orçamento.
+// Formulário principal do orçamento.
 const form = useForm({
-    client_name: '',
-    client_contact: '',
+    client_id: null,
     payment_terms: '',
     delivery_info: '',
-    // O 'items' aqui será a lista final de produtos a ser enviada para o backend.
     items: [],
 });
 
-// --- Lógica Reativa para Montagem do Orçamento ---
+// --- Lógica da Seleção de Pagamento ---
+const selectedPaymentMethodId = ref(null);
 
-// 'quoteItems' é uma variável reativa (um array) que irá armazenar os produtos
-// que o vendedor adiciona ao orçamento. Usamos 'ref' para isso.
-const quoteItems = ref([]);
-
-// Esta função é chamada quando o vendedor clica para adicionar um produto.
-const addItem = (product) => {
-    // Verificamos se o produto já está no orçamento.
-    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
-
-    if (existingItem) {
-        // Se já existe, apenas incrementamos a quantidade.
-        existingItem.quantity++;
+// Observa a seleção de uma forma de pagamento e preenche a descrição automaticamente.
+watch(selectedPaymentMethodId, (newId) => {
+    if (newId) {
+        const selectedMethod = props.paymentMethods.find(method => method.id === newId);
+        form.payment_terms = selectedMethod ? selectedMethod.description : '';
     } else {
-        // Se não existe, adicionamos o produto ao nosso array 'quoteItems'.
-        quoteItems.value.push({
-            product_id: product.id,
-            name: product.name,
-            price: product.price,
-            quantity: 1, // Começa com quantidade 1.
-        });
+        form.payment_terms = '';
     }
+});
+
+// --- Lógica do Modal de Novo Cliente ---
+const showAddClientModal = ref(false);
+const newClientForm = useForm({ name: '', contact_main: '', contact_secondary: '', address: '' });
+
+const submitNewClient = () => {
+    newClientForm.post(route('clients.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAddClientModal.value = false;
+            newClientForm.reset();
+            // A mensagem de sucesso será exibida na tela principal.
+        },
+    });
 };
 
-// Função para remover um item do orçamento.
+// --- Lógica da Pesquisa de Clientes ---
+const clientSearchQuery = ref('');
+const filteredClients = computed(() => {
+    if (!clientSearchQuery.value) return props.clients;
+    return props.clients.filter(client =>
+        client.name.toLowerCase().includes(clientSearchQuery.value.toLowerCase())
+    );
+});
+
+// --- Lógica dos Itens do Orçamento ---
+const quoteItems = ref([]);
+const addItem = (product) => {
+    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        quoteItems.value.push({ product_id: product.id, name: product.name, price: product.price, quantity: 1 });
+    }
+};
 const removeItem = (productId) => {
     quoteItems.value = quoteItems.value.filter(item => item.product_id !== productId);
 };
-
-// 'computed' cria uma propriedade que se recalcula automaticamente sempre que
-// uma das suas dependências reativas (neste caso, 'quoteItems') muda.
 const totalAmount = computed(() => {
-    // Usamos o método 'reduce' para somar o subtotal de cada item.
-    return quoteItems.value.reduce((total, item) => {
-        return total + (item.price * item.quantity);
-    }, 0); // O 0 é o valor inicial do total.
+    return quoteItems.value.reduce((total, item) => total + (item.price * item.quantity), 0);
 });
 
-// Função final para submeter o formulário.
+// --- Lógica de Submissão e Formatação ---
 const submit = () => {
-    // Antes de enviar, sincronizamos o nosso array reativo 'quoteItems'
-    // com o 'form.items' que será enviado para o backend.
-    form.items = quoteItems.value.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-    }));
-
-    // Enviamos o formulário para a rota de armazenamento.
+    form.items = quoteItems.value.map(item => ({ product_id: item.product_id, quantity: item.quantity }));
     form.post(route('quotes.store'));
 };
-
-// Função para formatar a moeda.
 const formatCurrency = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
@@ -86,54 +93,63 @@ const formatCurrency = (value) => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <!-- Usamos o mesmo evento @submit.prevent para chamar a nossa função 'submit' -->
+
+                <!-- Mensagem de Sucesso (para o modal ou para o orçamento) -->
+                <div v-if="$page.props.flash?.success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
+                    <span class="block sm:inline">{{ $page.props.flash.success }}</span>
+                </div>
+
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                        <!-- Coluna 1 e 2: Formulário e Itens do Orçamento -->
+                        <!-- Coluna Esquerda e Central -->
                         <div class="md:col-span-2 space-y-6">
-                            <!-- Detalhes do Cliente -->
+                            <!-- Bloco de Dados do Cliente -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
-                                <h3 class="text-lg font-bold mb-4">Dados do Cliente</h3>
-                                <div>
-                                    <label for="client_name">Nome do Cliente</label>
-                                    <input type="text" v-model="form.client_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                                    <p v-if="form.errors.client_name" class="text-sm text-red-600 mt-1">{{ form.errors.client_name }}</p>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-bold">Dados do Cliente</h3>
+                                    <button @click="showAddClientModal = true" type="button" class="text-sm bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded">
+                                        + Novo Cliente
+                                    </button>
                                 </div>
-                                <div class="mt-4">
-                                    <label for="client_contact">Contacto (Email/Telefone)</label>
-                                    <input type="text" v-model="form.client_contact" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
-                                    <p v-if="form.errors.client_contact" class="text-sm text-red-600 mt-1">{{ form.errors.client_contact }}</p>
+                                <div class="mb-4">
+                                    <label for="client_search">Pesquisar Cliente</label>
+                                    <input type="text" id="client_search" v-model="clientSearchQuery" placeholder="Digite o nome do cliente..." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                                </div>
+                                <div>
+                                    <label for="client_id">Selecionar Cliente</label>
+                                    <select id="client_id" v-model="form.client_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                                        <option :value="null" disabled>-- Escolha um cliente --</option>
+                                        <option v-for="client in filteredClients" :key="client.id" :value="client.id">
+                                            {{ client.name }} - ({{ client.contact_main }})
+                                        </option>
+                                    </select>
+                                    <p v-if="form.errors.client_id" class="text-sm text-red-600 mt-1">{{ form.errors.client_id }}</p>
                                 </div>
                             </div>
 
-                            <!-- Itens do Orçamento -->
+                            <!-- Bloco de Itens do Orçamento -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Itens do Orçamento</h3>
-                                <div v-if="quoteItems.length === 0" class="text-center text-gray-500 py-4">
-                                    Nenhum item adicionado.
-                                </div>
+                                <div v-if="quoteItems.length === 0" class="text-center text-gray-500 py-4">Nenhum item adicionado.</div>
                                 <div v-else>
-                                    <!-- Tabela de itens adicionados -->
                                     <div v-for="item in quoteItems" :key="item.product_id" class="flex items-center justify-between border-b py-2">
                                         <div>
                                             <p class="font-semibold">{{ item.name }}</p>
                                             <p class="text-sm text-gray-600">{{ formatCurrency(item.price) }}</p>
                                         </div>
                                         <div class="flex items-center gap-4">
-                                            <input type="number" v-model="item.quantity" min="1" class="w-20 text-center rounded-md border-gray-300 shadow-sm">
+                                            <input type="number" v-model.number="item.quantity" min="1" class="w-20 text-center rounded-md border-gray-300 shadow-sm">
                                             <button @click="removeItem(item.product_id)" type="button" class="text-red-500 hover:text-red-700">Remover</button>
                                         </div>
                                     </div>
                                 </div>
                                 <p v-if="form.errors.items" class="text-sm text-red-600 mt-2">{{ form.errors.items }}</p>
-                                <div class="text-right font-bold text-xl mt-4">
-                                    Total: {{ formatCurrency(totalAmount) }}
-                                </div>
+                                <div class="text-right font-bold text-xl mt-4">Total: {{ formatCurrency(totalAmount) }}</div>
                             </div>
                         </div>
 
-                        <!-- Coluna 3: Lista de Produtos Disponíveis -->
+                        <!-- Coluna Direita -->
                         <div class="md:col-span-1">
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Adicionar Produtos</h3>
@@ -148,12 +164,18 @@ const formatCurrency = (value) => {
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
-                    <!-- Ações do Formulário -->
+                    <!-- Bloco de Detalhes Adicionais -->
                     <div class="mt-6 bg-white p-6 rounded-lg shadow-sm">
                          <h3 class="text-lg font-bold mb-4">Detalhes Adicionais</h3>
+                         <div class="mb-4">
+                            <label for="payment_method_select">Selecionar Forma de Pagamento (Opcional)</label>
+                            <select id="payment_method_select" v-model="selectedPaymentMethodId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option :value="null">-- Preencher manualmente --</option>
+                                <option v-for="method in paymentMethods" :key="method.id" :value="method.id">{{ method.name }}</option>
+                            </select>
+                         </div>
                          <div>
                             <label for="payment_terms">Condições de Pagamento</label>
                             <textarea v-model="form.payment_terms" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
@@ -172,4 +194,29 @@ const formatCurrency = (value) => {
             </div>
         </div>
     </AuthenticatedLayout>
+
+    <!-- Modal de Novo Cliente -->
+    <Modal :show="showAddClientModal" @close="showAddClientModal = false">
+        <div class="p-6">
+            <h2 class="text-lg font-medium text-gray-900">Adicionar Novo Cliente</h2>
+            <form @submit.prevent="submitNewClient" class="mt-6 space-y-4">
+                <div>
+                    <label for="new_client_name">Nome Completo</label>
+                    <input id="new_client_name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="newClientForm.name" required />
+                    <p v-if="newClientForm.errors.name" class="text-sm text-red-600 mt-2">{{ newClientForm.errors.name }}</p>
+                </div>
+                <div>
+                    <label for="new_client_contact">Contacto Principal</label>
+                    <input id="new_client_contact" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="newClientForm.contact_main" required />
+                    <p v-if="newClientForm.errors.contact_main" class="text-sm text-red-600 mt-2">{{ newClientForm.errors.contact_main }}</p>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button type="button" @click="showAddClientModal = false" class="mr-4 text-gray-600">Cancelar</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" :disabled="newClientForm.processing">
+                        {{ newClientForm.processing ? 'A Guardar...' : 'Guardar Cliente' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </Modal>
 </template>

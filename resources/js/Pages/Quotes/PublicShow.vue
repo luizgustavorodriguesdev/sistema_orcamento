@@ -1,9 +1,10 @@
 <script setup>
 import { Head } from '@inertiajs/vue3';
-
+import { computed } from 'vue';
 // O controller passa a prop 'quote' com todos os dados necessários.
 const props = defineProps({
     quote: Object,
+    settings: Object,
 });
 
 // Funções de formatação que já conhecemos.
@@ -26,9 +27,20 @@ const getWhatsAppMessage = () => {
     return encodeURIComponent(message);
 };
 
+
+
 // Aqui você deve colocar o número de WhatsApp da sua loja.
 const storePhoneNumber = '5562984312949'; // Exemplo: 55 (Brasil) + 62 (Goiás) + 999999999 (Número)
-const whatsappLink = `https://wa.me/${storePhoneNumber}?text=${getWhatsAppMessage()}`;
+//const whatsappLink = `https://wa.me/${storePhoneNumber}?text=${getWhatsAppMessage()}`;
+// O link do WhatsApp agora é dinâmico, usando o número das configurações.
+const whatsappLink = computed(() => {
+    const vendorName = props.quote.user ? props.quote.user.name : 'nosso vendedor';
+    const message = `Olá, ${vendorName}! Gostaria de falar sobre o orçamento Nº ${props.quote.id}.`;
+    const encodedMessage = encodeURIComponent(message);
+    // Usamos o número de WhatsApp das configurações, com um fallback.
+    const phoneNumber = props.settings.company_whatsapp || '5562999999999';
+    return `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+});
 
 </script>
 
@@ -47,10 +59,9 @@ const whatsappLink = `https://wa.me/${storePhoneNumber}?text=${getWhatsAppMessag
                         <p class="text-gray-500">Data: {{ formatDate(quote.created_at) }}</p>
                     </div>
                     <div class="text-right">
-                        <!-- Adicione o seu logo aqui se desejar -->
-                        <h2 class="text-2xl font-semibold text-blue-600">Sua Loja de Brindes</h2>
-                        <p class="text-gray-600">Rua Exemplo, 123, Cidade</p>
-                        <p class="text-gray-600">contato@sualoja.com</p>
+                        <h2 class="text-2xl font-semibold text-blue-600">{{ settings.company_name || 'Sua Loja de Brindes' }}</h2>
+                        <p class="text-gray-600">{{ settings.company_address || 'Rua Exemplo, 123' }}</p>
+                        <p class="text-gray-600">{{ settings.company_email || 'contato@sualoja.com' }}</p>
                     </div>
                 </header>
 
@@ -105,17 +116,18 @@ const whatsappLink = `https://wa.me/${storePhoneNumber}?text=${getWhatsAppMessag
                     <div class="text-right">
                         <p class="text-lg text-gray-600">Total do Orçamento:</p>
                         <p class="text-4xl font-bold text-gray-900 mb-6">{{ formatCurrency(quote.total_amount) }}</p>
-
+                        
                         <a :href="whatsappLink" target="_blank" class="inline-block bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-colors">
                             Aprovar via WhatsApp
                         </a>
                     </div>
                 </section>
+                
 
-                <!-- Rodapé -->
+                <!-- Rodapé com observações dinâmicas -->
                 <footer class="text-center text-gray-500 border-t pt-6 mt-8">
-                    <p>Obrigado pela sua preferência!</p>
-                    <p>Este orçamento é válido por 7 dias.</p>
+                    <p v-if="settings.company_observations">{{ settings.company_observations }}</p>
+                    <p v-else>Obrigado pela sua preferência!</p>
                 </footer>
 
             </div>

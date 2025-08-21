@@ -56,6 +56,14 @@ const showingNavigationDropdown = ref(false);
                                     Clientes
                                 </NavLink>
 
+                                <NavLink :href="route('payment-methods.index')" :active="route().current('payment-methods.*')">
+                                    Pagamentos
+                                </NavLink>
+                                
+                                <NavLink :href="route('settings.index')" :active="route().current('settings.*')">
+                                    Configurações
+                                </NavLink>
+
                             </div>
                         </div>
 

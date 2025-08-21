@@ -1,36 +1,48 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { ref } from 'vue';
 
-// O controller passa a prop 'quotes' para este componente.
 const props = defineProps({
     quotes: Object,
+    settings: Object, // Recebemos as configurações aqui
 });
 
-// Função para formatar o preço para o padrão brasileiro.
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL',
-    }).format(value);
+const copiedQuoteId = ref(null); // Variável para controlar o feedback "Copiado!"
+
+// Função para copiar o link do orçamento
+const copyLink = (quote) => {
+    // Usa o domínio das configurações ou o domínio atual como fallback
+    const domain = props.settings.app_domain || window.location.origin;
+    const url = `${domain}/orcamento/${quote.unique_hash}`;
+
+    // Usa a API do navegador para copiar o texto para a área de transferência
+    navigator.clipboard.writeText(url).then(() => {
+        copiedQuoteId.value = quote.id; // Ativa o feedback visual
+        // Remove o feedback após 2 segundos
+        setTimeout(() => {
+            copiedQuoteId.value = null;
+        }, 2000);
+    }).catch(err => {
+        console.error('Erro ao copiar o link: ', err);
+        alert('Não foi possível copiar o link.');
+    });
 };
 
-// Função para formatar a data para um formato mais legível.
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
 const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('pt-BR', options);
 };
 
-// Uma propriedade computada para determinar a cor do status.
 const statusClass = (status) => {
     switch (status) {
-        case 'Aprovado':
-            return 'bg-green-100 text-green-800';
-        case 'Cancelado':
-            return 'bg-red-100 text-red-800';
-        default: // Pendente
-            return 'bg-yellow-100 text-yellow-800';
+        case 'Aprovado': return 'bg-green-100 text-green-800';
+        case 'Cancelado': return 'bg-red-100 text-red-800';
+        default: return 'bg-yellow-100 text-yellow-800';
     }
 };
 </script>
@@ -55,7 +67,6 @@ const statusClass = (status) => {
                             </Link>
                         </div>
 
-                        <!-- Mensagem de sucesso -->
                         <div v-if="$page.props.flash?.success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                             <span class="block sm:inline">{{ $page.props.flash.success }}</span>
                         </div>
@@ -64,27 +75,31 @@ const statusClass = (status) => {
                             <table class="w-full text-sm text-left text-gray-500">
                                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                                     <tr>
+                                        <th scope="col" class="px-6 py-3">ID</th>
                                         <th scope="col" class="px-6 py-3">Cliente</th>
                                         <th scope="col" class="px-6 py-3">Vendedor</th>
-                                        <th scope="col" class="px-6 py-3">Data</th>
-                                        <th scope="col" class="px-6 py-3">Valor Total</th>
+                                        <th scope="col" class="px-6 py-3">Valor</th>
                                         <th scope="col" class="px-6 py-3">Status</th>
                                         <th scope="col" class="px-6 py-3">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="quote in quotes.data" :key="quote.id" class="bg-white border-b hover:bg-gray-50">
-                                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ quote.client_name }}</td>
+                                        <td class="px-6 py-4 font-bold text-gray-700">#{{ String(quote.id).padStart(4, '0') }}</td>
+                                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ quote.client ? quote.client.name : 'N/A' }}</td>
                                         <td class="px-6 py-4">{{ quote.user ? quote.user.name : 'N/A' }}</td>
-                                        <td class="px-6 py-4">{{ formatDate(quote.created_at) }}</td>
                                         <td class="px-6 py-4">{{ formatCurrency(quote.total_amount) }}</td>
                                         <td class="px-6 py-4">
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" :class="statusClass(quote.status)">
                                                 {{ quote.status }}
                                             </span>
                                         </td>
-                                        <td class="px-6 py-4">
-                                            <a href="#" class="font-medium text-blue-600 hover:underline">Ver</a>
+                                        <td class="px-6 py-4 flex items-center space-x-4">
+                                            <Link :href="route('quotes.edit', quote.id)" class="font-medium text-blue-600 hover:underline">Editar</Link>
+                                            <button @click="copyLink(quote)" class="font-medium text-green-600 hover:underline">
+                                                <span v-if="copiedQuoteId === quote.id">Copiado!</span>
+                                                <span v-else>Copiar Link</span>
+                                            </button>
                                         </td>
                                     </tr>
                                     <tr v-if="quotes.data.length === 0">
@@ -95,12 +110,7 @@ const statusClass = (status) => {
                                 </tbody>
                             </table>
                         </div>
-
-                        <!-- Paginação -->
-                        <div class="mt-4">
-                            <!-- O componente de paginação que já corrigimos antes -->
-                        </div>
-
+                        
                     </div>
                 </div>
             </div>

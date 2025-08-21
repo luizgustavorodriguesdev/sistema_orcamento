@@ -42,7 +42,7 @@ class ClientController extends Controller
 
         Client::create($request->all());
 
-        return redirect()->route('clients.index')->with('success', 'Cliente criado com sucesso.');
+        return back()->with('success', 'Cliente criado com sucesso.');
     }
 
     /**
