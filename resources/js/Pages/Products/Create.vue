@@ -2,6 +2,12 @@
 // Importações essenciais
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'; // Layout padrão para páginas autenticadas
 import { Head, useForm } from '@inertiajs/vue3'; // Head para o título da página e useForm para gerenciar o formulário
+import Editor from '@/Components/Editor.vue'; // Importamos o nosso componete de editor
+
+// Recebemos a lista de categorias do nosso controller.
+const props = defineProps({
+    categories: Array,
+});
 
 // O useForm do Inertia cria um objeto reativo que encapsula os dados do formulário.
 // Ele também gerencia o estado de envio (processing), erros de validação (errors), e muito mais.
@@ -9,6 +15,8 @@ const form = useForm({
     name: '',          // Valor inicial para o nome do produto
     description: '',   // Valor inicial para a descrição
     price: null,       // Valor inicial para o preço
+    promotional_price: null, // Valor inicial para o preço promocional
+    category_id: null, // Valor inicial para o ID da categoria
 });
 
 // Esta função será chamada quando o formulário for submetido.
@@ -60,29 +68,38 @@ const submit = () => {
                                 <p v-if="form.errors.name" class="text-sm text-red-600 mt-2">{{ form.errors.name }}</p>
                             </div>
 
+                             <!-- Campo Categoria -->
+                            <div class="mt-4">
+                                <label for="category_id" class="block font-medium text-sm text-gray-700">Categoria</label>
+                                <select id="category_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="form.category_id">
+                                    <option :value="null">-- Nenhuma --</option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id">
+                                        {{ category.name }}
+                                    </option>
+                                </select>
+                                <p v-if="form.errors.category_id" class="text-sm text-red-600 mt-2">{{ form.errors.category_id }}</p>
+                            </div>
+
                             <!-- Campo Descrição -->
                             <div class="mt-4">
                                 <label for="description" class="block font-medium text-sm text-gray-700">Descrição</label>
-                                <textarea
-                                    id="description"
-                                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full"
-                                    v-model="form.description"
-                                ></textarea>
+                                <Editor id="description" v-model="form.description" />
                                 <p v-if="form.errors.description" class="text-sm text-red-600 mt-2">{{ form.errors.description }}</p>
                             </div>
 
-                            <!-- Campo Preço -->
-                            <div class="mt-4">
-                                <label for="price" class="block font-medium text-sm text-gray-700">Preço</label>
-                                <input
-                                    id="price"
-                                    type="number"
-                                    step="0.01"
-                                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mt-1 block w-full"
-                                    v-model="form.price"
-                                    required
-                                />
-                                <p v-if="form.errors.price" class="text-sm text-red-600 mt-2">{{ form.errors.price }}</p>
+                            
+                             <!-- Campos de Preço + Promoção    -->
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="price" class="block font-medium text-sm text-gray-700">Preço Normal (R$)</label>
+                                    <input id="price" type="number" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="form.price" required />
+                                    <p v-if="form.errors.price" class="text-sm text-red-600 mt-2">{{ form.errors.price }}</p>
+                                </div>
+                                <div>
+                                    <label for="promotional_price" class="block font-medium text-sm text-gray-700">Preço Promocional (Opcional)</label>
+                                    <input id="promotional_price" type="number" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="form.promotional_price" />
+                                    <p v-if="form.errors.promotional_price" class="text-sm text-red-600 mt-2">{{ form.errors.promotional_price }}</p>
+                                </div>
                             </div>
 
                             <!-- Botão de Submissão -->

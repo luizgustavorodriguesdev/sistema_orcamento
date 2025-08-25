@@ -7,6 +7,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia; 
 
@@ -46,6 +47,9 @@ Route::middleware('auth')->group(function () {
     // Rota Configurações
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
     Route::post('/settings', [SettingController::class, 'store'])->name('settings.store');
+
+    //Rota para categoria de produtos
+    Route::resource('categories', CategoryController::class);
 });
 
 require __DIR__.'/auth.php';

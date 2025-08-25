@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Category; 
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
-use Inertia\Inertia; // Importe a classe Inertia
-use Inertia\Response; // Importe a classe Response
+use Inertia\Inertia;
+use Inertia\Response;
 
 class ProductController extends Controller
 {
@@ -15,12 +16,9 @@ class ProductController extends Controller
      */
     public function index(): Response
     {
-        // A lógica de busca continua a mesma
-        $products = Product::latest()->paginate(10);
+        // Carregamos o nome da categoria junto com cada produto para a listagem
+        $products = Product::with('category')->latest()->paginate(10);
 
-        // Em vez de view(), usamos Inertia::render()
-        // O primeiro argumento é o nome do componente Vue que será carregado
-        // O segundo argumento é um array com os dados (props) que passamos para o componente
         return Inertia::render('Products/Index', [
             'products' => $products,
         ]);
@@ -31,12 +29,13 @@ class ProductController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Products/Create');
+        return Inertia::render('Products/Create', [
+            'categories' => Category::orderBy('name')->get(),
+        ]);
     }
 
     /**
-     * Salva um novo produto no banco de dados.
-     * As funções de store, update e destroy não mudam, pois usam redirects.
+     * Salva um novo produto na base de dados.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -44,6 +43,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'promotional_price' => 'nullable|numeric|min:0|lt:price', 
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         Product::create($request->all());
@@ -57,13 +58,16 @@ class ProductController extends Controller
      */
     public function edit(Product $product): Response
     {
+        $categories = Category::orderBy('name')->get();
+        //dd($categories);
         return Inertia::render('Products/Edit', [
             'product' => $product,
+            'categories' => Category::orderBy('name')->get(),
         ]);
     }
 
     /**
-     * Atualiza um produto existente no banco de dados.
+     * Atualiza um produto existente na base de dados.
      */
     public function update(Request $request, Product $product): RedirectResponse
     {
@@ -71,6 +75,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
+            'promotional_price' => 'nullable|numeric|min:0|lt:price', 
+            'category_id' => 'nullable|exists:categories,id',
         ]);
 
         $product->update($request->all());
@@ -80,13 +86,13 @@ class ProductController extends Controller
     }
 
     /**
-     * Remove um produto do banco de dados.
+     * Remove um produto da base de dados.
      */
     public function destroy(Product $product): RedirectResponse
     {
         $product->delete();
 
         return redirect()->route('products.index')
-                         ->with('success', 'Produto deletado com sucesso.');
+                         ->with('success', 'Produto apagado com sucesso.');
     }
 }

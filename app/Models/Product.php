@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany; // Importe a classe
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
@@ -16,8 +16,18 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'promotional_price',
         'image_url',
+        'category_id'
     ];
+
+    /**
+     * RELAÇÃO: Um produto pertence a uma categoria.
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     /**
      * RELACIONAMENTO: Um produto pode pertencer a muitos orçamentos.
