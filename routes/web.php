@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\StorefrontController; 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia; 
 
@@ -22,6 +23,13 @@ Route::get('/dashboard', function () {
 
 // Rota pública para visualização do orçamento
 Route::get('/orcamento/{quote:unique_hash}', [QuoteController::class, 'showPublic'])->name('quotes.public.show');
+
+Route::get('/', [StorefrontController::class, 'index'])->name('storefront.index');
+// Rota para a página do carrinho de orçamento
+Route::get('/carrinho', [StorefrontController::class, 'cart'])->name('storefront.cart');
+// Rota para guardar o orçamento criado pelo cliente
+Route::post('/carrinho', [StorefrontController::class, 'storeQuote'])->name('storefront.storeQuote');
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -50,6 +58,9 @@ Route::middleware('auth')->group(function () {
 
     //Rota para categoria de produtos
     Route::resource('categories', CategoryController::class);
+
+    // Rota para apagar uma imagem de produto específica
+    Route::delete('/product-images/{productImage}', [ProductController::class, 'destroyImage'])->name('products.images.destroy');
 });
 
 require __DIR__.'/auth.php';

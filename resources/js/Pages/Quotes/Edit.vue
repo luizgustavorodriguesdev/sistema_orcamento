@@ -18,17 +18,58 @@ const form = useForm({
     items: [],
 });
 
-// --- Lógica da Seleção de Pagamento (CORRIGIDA) ---
+const quoteItems = ref(props.quote.products.map(p => ({
+    product_id: p.id,
+    name: p.name,
+    price: p.pivot.unit_price,
+    quantity: p.pivot.quantity,
+})));
 
-// 1. Procuramos se a descrição do pagamento do orçamento atual corresponde a algum método cadastrado.
+// --- LÓGICA DE PREÇOS DINÂMICOS ---
+const getPriceForQuantity = (product, quantity) => {
+    const tier = product.price_tiers
+        .filter(t => t.min_quantity <= quantity)
+        .sort((a, b) => b.min_quantity - a.min_quantity)[0];
+    return tier ? tier.price : product.price;
+};
+
+watch(quoteItems, (newItems) => {
+    newItems.forEach(item => {
+        const product = props.products.find(p => p.id === item.product_id);
+        if (product) {
+            item.price = getPriceForQuantity(product, item.quantity);
+        }
+    });
+}, { deep: true });
+
+// --- LÓGICA DOS ITENS DO ORÇAMENTO ---
+const addItem = (product) => {
+    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        quoteItems.value.push({
+            product_id: product.id,
+            name: product.name,
+            price: getPriceForQuantity(product, 1),
+            quantity: 1,
+        });
+    }
+};
+
+const removeItem = (productId) => {
+    quoteItems.value = quoteItems.value.filter(item => item.product_id !== productId);
+};
+
+const totalAmount = computed(() => {
+    return quoteItems.value.reduce((total, item) => total + (item.price * item.quantity), 0);
+});
+
+// --- LÓGICA DA SELEÇÃO DE PAGAMENTO ---
 const matchingMethod = props.paymentMethods.find(
     method => method.description === props.quote.payment_terms
 );
-
-// 2. Se encontrarmos uma correspondência, definimos o ID dela como o valor inicial.
-//    Caso contrário, o valor inicial será nulo, selecionando a opção "-- Preencher manualmente --".
 const selectedPaymentMethodId = ref(matchingMethod ? matchingMethod.id : null);
-
 
 watch(selectedPaymentMethodId, (newId) => {
     if (newId) {
@@ -37,31 +78,7 @@ watch(selectedPaymentMethodId, (newId) => {
     }
 });
 
-// Inicializamos a lista de itens do orçamento com os produtos que já existem nele.
-const quoteItems = ref(props.quote.products.map(p => ({
-    product_id: p.id,
-    name: p.name,
-    price: p.pivot.unit_price,
-    quantity: p.pivot.quantity,
-})));
-
-// --- Lógica dos Itens do Orçamento ---
-const addItem = (product) => {
-    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
-    if (existingItem) {
-        existingItem.quantity++;
-    } else {
-        quoteItems.value.push({ product_id: product.id, name: product.name, price: product.price, quantity: 1 });
-    }
-};
-const removeItem = (productId) => {
-    quoteItems.value = quoteItems.value.filter(item => item.product_id !== productId);
-};
-const totalAmount = computed(() => {
-    return quoteItems.value.reduce((total, item) => total + (item.price * item.quantity), 0);
-});
-
-// Função de submissão para a atualização.
+// --- LÓGICA DE SUBMISSÃO E FORMATAÇÃO ---
 const submit = () => {
     form.items = quoteItems.value.map(item => ({
         product_id: item.product_id,
@@ -90,9 +107,7 @@ const formatCurrency = (value) => {
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                        <!-- Coluna Esquerda e Central -->
                         <div class="md:col-span-2 space-y-6">
-                            <!-- Bloco de Status e Dados do Cliente -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
@@ -114,13 +129,12 @@ const formatCurrency = (value) => {
                                 </div>
                             </div>
 
-                            <!-- Bloco de Itens do Orçamento -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Itens do Orçamento</h3>
                                 <div v-for="item in quoteItems" :key="item.product_id" class="flex items-center justify-between border-b py-2">
                                     <div>
                                         <p class="font-semibold">{{ item.name }}</p>
-                                        <p class="text-sm text-gray-600">{{ formatCurrency(item.price) }}</p>
+                                        <p class="text-sm text-gray-600">{{ formatCurrency(item.price) }} / un.</p>
                                     </div>
                                     <div class="flex items-center gap-4">
                                         <input type="number" v-model.number="item.quantity" min="1" class="w-20 text-center rounded-md border-gray-300 shadow-sm">
@@ -131,7 +145,6 @@ const formatCurrency = (value) => {
                             </div>
                         </div>
 
-                        <!-- Coluna Direita -->
                         <div class="md:col-span-1">
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Adicionar Produtos</h3>
@@ -148,7 +161,6 @@ const formatCurrency = (value) => {
                         </div>
                     </div>
 
-                    <!-- Bloco de Detalhes Adicionais -->
                     <div class="mt-6 bg-white p-6 rounded-lg shadow-sm">
                          <h3 class="text-lg font-bold mb-4">Detalhes Adicionais</h3>
                          <div class="mb-4">

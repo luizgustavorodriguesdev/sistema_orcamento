@@ -4,14 +4,12 @@ import Modal from '@/Components/Modal.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 
-// O controller passa todas as listas necessárias como props.
 const props = defineProps({
     products: Array,
     clients: Array,
     paymentMethods: Array,
 });
 
-// Formulário principal do orçamento.
 const form = useForm({
     client_id: null,
     payment_terms: '',
@@ -19,35 +17,81 @@ const form = useForm({
     items: [],
 });
 
-// --- Lógica da Seleção de Pagamento ---
-const selectedPaymentMethodId = ref(null);
+const quoteItems = ref([]);
 
-// Observa a seleção de uma forma de pagamento e preenche a descrição automaticamente.
-watch(selectedPaymentMethodId, (newId) => {
-    if (newId) {
-        const selectedMethod = props.paymentMethods.find(method => method.id === newId);
-        form.payment_terms = selectedMethod ? selectedMethod.description : '';
+// --- LÓGICA DE PREÇOS DINÂMICOS ---
+
+// 1. Função JavaScript que replica a lógica do nosso Controller.
+const getPriceForQuantity = (product, quantity) => {
+    // Procura a escala de preço correspondente, ordenando da maior para a menor quantidade.
+    const tier = product.price_tiers
+        .filter(t => t.min_quantity <= quantity)
+        .sort((a, b) => b.min_quantity - a.min_quantity)[0];
+
+    // Se encontrar uma escala, retorna o preço dela. Caso contrário, retorna o preço base do produto.
+    return tier ? tier.price : product.price;
+};
+
+// 2. 'watch' observa o array 'quoteItems' para qualquer alteração (como a quantidade).
+watch(quoteItems, (newItems) => {
+    newItems.forEach(item => {
+        // Encontra o produto completo na nossa lista de props.
+        const product = props.products.find(p => p.id === item.product_id);
+        if (product) {
+            // Recalcula o preço unitário do item com base na sua nova quantidade.
+            item.price = getPriceForQuantity(product, item.quantity);
+        }
+    });
+}, { deep: true }); // 'deep: true' garante que o watch observe as propriedades dentro dos objetos do array.
+
+
+// --- LÓGICA DOS ITENS DO ORÇAMENTO ---
+const addItem = (product) => {
+    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
+    if (existingItem) {
+        existingItem.quantity++;
     } else {
-        form.payment_terms = '';
+        quoteItems.value.push({
+            product_id: product.id,
+            name: product.name,
+            // O preço inicial é calculado com base na quantidade 1.
+            price: getPriceForQuantity(product, 1),
+            quantity: 1,
+        });
     }
+};
+
+const removeItem = (productId) => {
+    quoteItems.value = quoteItems.value.filter(item => item.product_id !== productId);
+};
+
+const totalAmount = computed(() => {
+    return quoteItems.value.reduce((total, item) => total + (item.price * item.quantity), 0);
 });
 
-// --- Lógica do Modal de Novo Cliente ---
-const showAddClientModal = ref(false);
-const newClientForm = useForm({ name: '', contact_main: '', contact_secondary: '', address: '' });
+const submit = () => {
+    form.items = quoteItems.value.map(item => ({ product_id: item.product_id, quantity: item.quantity }));
+    form.post(route('quotes.store'));
+};
 
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+};
+
+
+// --- LÓGICA DO MODAL E PESQUISA DE CLIENTES ---
+const showAddClientModal = ref(false);
+const newClientForm = useForm({ name: '', contact_main: '' });
 const submitNewClient = () => {
     newClientForm.post(route('clients.store'), {
         preserveScroll: true,
         onSuccess: () => {
             showAddClientModal.value = false;
             newClientForm.reset();
-            // A mensagem de sucesso será exibida na tela principal.
         },
     });
 };
 
-// --- Lógica da Pesquisa de Clientes ---
 const clientSearchQuery = ref('');
 const filteredClients = computed(() => {
     if (!clientSearchQuery.value) return props.clients;
@@ -56,31 +100,17 @@ const filteredClients = computed(() => {
     );
 });
 
-// --- Lógica dos Itens do Orçamento ---
-const quoteItems = ref([]);
-const addItem = (product) => {
-    const existingItem = quoteItems.value.find(item => item.product_id === product.id);
-    if (existingItem) {
-        existingItem.quantity++;
-    } else {
-        quoteItems.value.push({ product_id: product.id, name: product.name, price: product.price, quantity: 1 });
-    }
-};
-const removeItem = (productId) => {
-    quoteItems.value = quoteItems.value.filter(item => item.product_id !== productId);
-};
-const totalAmount = computed(() => {
-    return quoteItems.value.reduce((total, item) => total + (item.price * item.quantity), 0);
-});
 
-// --- Lógica de Submissão e Formatação ---
-const submit = () => {
-    form.items = quoteItems.value.map(item => ({ product_id: item.product_id, quantity: item.quantity }));
-    form.post(route('quotes.store'));
-};
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-};
+// --- LÓGICA DA SELEÇÃO DE PAGAMENTO ---
+const selectedPaymentMethodId = ref(null);
+watch(selectedPaymentMethodId, (newId) => {
+    if (newId) {
+        const selectedMethod = props.paymentMethods.find(method => method.id === newId);
+        form.payment_terms = selectedMethod ? selectedMethod.description : '';
+    } else {
+        form.payment_terms = '';
+    }
+});
 </script>
 
 <template>
@@ -93,8 +123,6 @@ const formatCurrency = (value) => {
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-
-                <!-- Mensagem de Sucesso (para o modal ou para o orçamento) -->
                 <div v-if="$page.props.flash?.success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
                     <span class="block sm:inline">{{ $page.props.flash.success }}</span>
                 </div>
@@ -102,9 +130,7 @@ const formatCurrency = (value) => {
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                        <!-- Coluna Esquerda e Central -->
                         <div class="md:col-span-2 space-y-6">
-                            <!-- Bloco de Dados do Cliente -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-bold">Dados do Cliente</h3>
@@ -128,7 +154,6 @@ const formatCurrency = (value) => {
                                 </div>
                             </div>
 
-                            <!-- Bloco de Itens do Orçamento -->
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Itens do Orçamento</h3>
                                 <div v-if="quoteItems.length === 0" class="text-center text-gray-500 py-4">Nenhum item adicionado.</div>
@@ -136,7 +161,7 @@ const formatCurrency = (value) => {
                                     <div v-for="item in quoteItems" :key="item.product_id" class="flex items-center justify-between border-b py-2">
                                         <div>
                                             <p class="font-semibold">{{ item.name }}</p>
-                                            <p class="text-sm text-gray-600">{{ formatCurrency(item.price) }}</p>
+                                            <p class="text-sm text-gray-600">{{ formatCurrency(item.price) }} / un.</p>
                                         </div>
                                         <div class="flex items-center gap-4">
                                             <input type="number" v-model.number="item.quantity" min="1" class="w-20 text-center rounded-md border-gray-300 shadow-sm">
@@ -149,7 +174,6 @@ const formatCurrency = (value) => {
                             </div>
                         </div>
 
-                        <!-- Coluna Direita -->
                         <div class="md:col-span-1">
                             <div class="bg-white p-6 rounded-lg shadow-sm">
                                 <h3 class="text-lg font-bold mb-4">Adicionar Produtos</h3>
@@ -166,7 +190,6 @@ const formatCurrency = (value) => {
                         </div>
                     </div>
 
-                    <!-- Bloco de Detalhes Adicionais -->
                     <div class="mt-6 bg-white p-6 rounded-lg shadow-sm">
                          <h3 class="text-lg font-bold mb-4">Detalhes Adicionais</h3>
                          <div class="mb-4">
@@ -195,7 +218,6 @@ const formatCurrency = (value) => {
         </div>
     </AuthenticatedLayout>
 
-    <!-- Modal de Novo Cliente -->
     <Modal :show="showAddClientModal" @close="showAddClientModal = false">
         <div class="p-6">
             <h2 class="text-lg font-medium text-gray-900">Adicionar Novo Cliente</h2>

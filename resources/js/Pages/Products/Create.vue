@@ -3,6 +3,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'; // Layout padrão para páginas autenticadas
 import { Head, useForm } from '@inertiajs/vue3'; // Head para o título da página e useForm para gerenciar o formulário
 import Editor from '@/Components/Editor.vue'; // Importamos o nosso componete de editor
+import {ref} from 'vue';
 
 // Recebemos a lista de categorias do nosso controller.
 const props = defineProps({
@@ -17,7 +18,35 @@ const form = useForm({
     price: null,       // Valor inicial para o preço
     promotional_price: null, // Valor inicial para o preço promocional
     category_id: null, // Valor inicial para o ID da categoria
+    main_image: null,
+    gallery_images: [],
+    price_tiers:[],
 });
+
+// --- Lógica para as Escalas de Preços ---
+const addPriceTier = () => {
+    form.price_tiers.push({
+        min_quantity: '',
+        price: '',
+    });
+};
+
+const removePriceTier = (index) => {
+    form.price_tiers.splice(index, 1);
+};
+
+// Variável reativa para mostrar a pré-visualização da imagem principal.
+const mainImagePreview = ref(null);
+
+// Função para atualizar a pré-visualização quando um ficheiro é selecionado.
+function updateMainImagePreview(event) {
+    const file = event.target.files[0];
+    if (file) {
+        mainImagePreview.value = URL.createObjectURL(file);
+    } else {
+        mainImagePreview.value = null;
+    }
+}
 
 // Esta função será chamada quando o formulário for submetido.
 const submit = () => {
@@ -99,6 +128,67 @@ const submit = () => {
                                     <label for="promotional_price" class="block font-medium text-sm text-gray-700">Preço Promocional (Opcional)</label>
                                     <input id="promotional_price" type="number" step="0.01" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" v-model="form.promotional_price" />
                                     <p v-if="form.errors.promotional_price" class="text-sm text-red-600 mt-2">{{ form.errors.promotional_price }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Secção de Escalas de Preços -->
+                            <div class="mt-6 pt-6 border-t">
+                                <h3 class="text-lg font-medium text-gray-900">Preços por Quantidade</h3>
+                                <div v-for="(tier, index) in form.price_tiers" :key="index" class="mt-4 grid grid-cols-3 gap-4 items-center">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Qtd. Mínima</label>
+                                        <input type="number" v-model="tier.min_quantity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Preço por Unidade (R$)</label>
+                                        <input type="number" step="0.01" v-model="tier.price" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required />
+                                    </div>
+                                    <div class="pt-6">
+                                        <button @click="removePriceTier(index)" type="button" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                            Remover
+                                        </button>
+                                    </div>
+                                </div>
+                                <button @click="addPriceTier" type="button" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">
+                                    Adicionar Escala de Preço
+                                </button>
+                            </div>
+
+                            <!-- Secção de Imagens -->
+                            <div class="mt-4">
+                                <h3 class="text-lg font-medium text-gray-900">Imagens do Produto</h3>
+                                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Upload da Imagem Principal -->
+                                    <div>
+                                        <label for="main_image" class="block font-medium text-sm text-gray-700">Imagem Principal</label>
+                                        <input 
+                                            id="main_image" 
+                                            type="file" 
+                                            class="mt-1 block w-full" 
+                                            @input="form.main_image = $event.target.files[0]"
+                                            @change="updateMainImagePreview"
+                                            accept="image/*"
+                                        />
+                                        <!-- Pré-visualização da Imagem -->
+                                        <div v-if="mainImagePreview" class="mt-4">
+                                            <img :src="mainImagePreview" class="w-48 h-48 object-cover rounded-md" />
+                                        </div>
+                                        <p v-if="form.errors.main_image" class="text-sm text-red-600 mt-2">{{ form.errors.main_image }}</p>
+                                    </div>
+
+                                    <!-- Upload da Galeria de Imagens -->
+                                    <div>
+                                        <label for="gallery_images" class="block font-medium text-sm text-gray-700">Galeria de Imagens (múltiplas)</label>
+                                        <input 
+                                            id="gallery_images" 
+                                            type="file" 
+                                            class="mt-1 block w-full" 
+                                            @input="form.gallery_images = $event.target.files" 
+                                            multiple
+                                            accept="image/*"
+                                        />
+                                        <p v-if="form.errors.gallery_images" class="text-sm text-red-600 mt-2">{{ form.errors.gallery_images }}</p>
+                                    </div>
                                 </div>
                             </div>
 
