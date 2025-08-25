@@ -1,118 +1,204 @@
-🛍️ Sistema de Orçamentos para Loja de Brindes
+🛍️ OrçaBrindes - Sistema de Orçamentos Online
 📖 Sobre o Projeto
-Este é um sistema de orçamento online desenvolvido para uma loja de brindes, com o objetivo de otimizar e agilizar o processo de cotação tanto para os vendedores quanto para os clientes. A plataforma permite a criação, gestão e visualização de orçamentos de forma dinâmica e profissional.
 
-O projeto foi construído do zero, com foco em uma arquitetura moderna e escalável, utilizando as melhores práticas de desenvolvimento web.
+O OrçaBrindes é uma solução web completa e robusta, desenhada para modernizar e otimizar o processo de orçamentos para lojas de brindes e produtos personalizados. A plataforma oferece um painel de controlo administrativo poderoso para a gestão completa do negócio e uma vitrine pública interativa para que os clientes possam montar os seus próprios pedidos de orçamento.
 
+Construído com uma stack de tecnologias modernas, o sistema foca-se numa experiência de utilizador fluida, tanto para o vendedor como para o cliente final.
 ✨ Funcionalidades Principais
-O sistema é dividido em duas frentes principais:
 
+O sistema é dividido em duas frentes principais, repletas de funcionalidades profissionais:
 Painel Administrativo (Dashboard)
-✅ Autenticação Segura: Acesso restrito para vendedores e administradores.
 
-✅ Gestão de Produtos (CRUD): Funcionalidade completa para criar, visualizar, editar e deletar produtos do catálogo.
+    ✅ Gestão de Produtos Avançada:
 
-✅ Criação de Orçamentos: Interface interativa para que o vendedor monte um orçamento, adicione produtos, defina quantidades e preencha os dados do cliente.
+        CRUD completo de produtos.
 
-✅ Listagem de Orçamentos: Visualização de todos os orçamentos gerados, com informações sobre cliente, vendedor, data e status.
+        Categorias de Produtos: Organize os seus produtos de forma intuitiva.
 
-✅ Geração de Link Público: Cada orçamento gera um link único e compartilhável para ser enviado ao cliente.
+        Preço Promocional: Defina preços "de/por" para criar ofertas.
 
-Área Pública (Cliente)
-✅ Visualização Profissional: O cliente acessa o link e vê uma página limpa e detalhada com todas as informações do seu orçamento.
+        Editor de Texto Rico: Crie descrições de produtos detalhadas e formatadas.
 
-✅ Aprovação via WhatsApp: Um botão de ação permite que o cliente inicie uma conversa com o vendedor para aprovar ou discutir o orçamento.
+        Galeria de Imagens: Carregue uma imagem principal e várias imagens secundárias para cada produto.
 
-🔜 Vitrine de Produtos Online: (Em desenvolvimento) O cliente poderá navegar pelos produtos.
+        Preços por Quantidade: Defina escalas de preços dinâmicas (ex: 10-20 unidades = RX,21−50unidades=RY).
 
-🔜 Orçamento Self-Service: (Em desenvolvimento) O cliente poderá montar seu próprio orçamento e gerar um link para visualizar ou enviar ao vendedor.
+    ✅ Gestão Comercial Completa:
+
+        CRUD de Clientes: Mantenha uma base de dados dos seus clientes.
+
+        CRUD de Vendedores: Gira os utilizadores do sistema com diferentes níveis de acesso (admin/vendedor).
+
+        CRUD de Formas de Pagamento: Cadastre contas bancárias, PIX e condições de pagamento para reutilizar nos orçamentos.
+
+    ✅ Criação de Orçamentos Inteligente:
+
+        Interface interativa para montar orçamentos.
+
+        Seleção de Clientes: Pesquise e selecione clientes existentes ou adicione um novo sem sair da tela.
+
+        Cálculo Automático: O preço dos itens é ajustado automaticamente com base na quantidade e nas escalas de preços definidas.
+
+        Geração de Link Público: Crie e copie um link único para enviar o orçamento ao cliente.
+
+    ✅ Configurações Gerais da Loja:
+
+        Personalize o sistema com os dados da sua empresa (nome, CNPJ, morada, etc.).
+
+        Configure informações de contacto, redes sociais e o domínio da aplicação.
+
+Vitrine Pública (Cliente)
+
+    ✅ Layout de E-commerce Profissional:
+
+        Cabeçalho com logo e menu de categorias.
+
+        Banner promocional.
+
+        Grelha de produtos com paginação.
+
+        Rodapé com informações da empresa.
+
+    ✅ Carrinho de Orçamento Interativo:
+
+        Clientes podem adicionar produtos ao seu pedido de orçamento.
+
+        O ícone do carrinho atualiza em tempo real.
+
+    ✅ Finalização de Orçamento Self-Service:
+
+        Página de carrinho onde o cliente pode rever os itens e ajustar as quantidades.
+
+        O preço é recalculado dinamicamente com base na quantidade.
+
+        O cliente preenche os seus dados e gera o seu próprio link de orçamento, que fica registado no sistema para o vendedor.
 
 🚀 Tecnologias Utilizadas
+
 Tecnologia
+	
 
 Descrição
 
 Backend
+	
 
-Laravel 11 - Framework PHP robusto para a lógica de negócio, APIs e gestão de dados.
+Laravel - Framework PHP robusto para toda a lógica de negócio, APIs e gestão de dados.
 
 Frontend
+	
 
-Vue.js 3 + Inertia.js - Para criar uma interface de usuário reativa e moderna, sem a complexidade de uma SPA tradicional.
+Vue.js + Inertia.js - Para criar uma interface de utilizador reativa e moderna, com a performance de uma SPA.
 
 Estilização
+	
 
-Tailwind CSS - Framework CSS utility-first para um design rápido, consistente e customizável.
+Tailwind CSS - Framework CSS utility-first para um design rápido, consistente e totalmente personalizável.
+
+Editor de Texto
+	
+
+Tiptap - Biblioteca moderna e extensível para a funcionalidade de editor de texto rico.
 
 Banco de Dados
+	
 
-MySQL - Sistema de gerenciamento de banco de dados relacional para armazenar todos os dados da aplicação.
-
-Servidor Local
-
-XAMPP - Ambiente de desenvolvimento local com Apache e MySQL.
-
-Autenticação
-
-Laravel Breeze - Pacote oficial para uma implementação rápida e segura do sistema de login e registro.
-
+MySQL - Sistema de gestão de base de dados relacional para armazenar todos os dados da aplicação.
 🗃️ Estrutura do Banco de Dados
-O banco de dados foi modelado para ser simples e eficiente, contendo 4 tabelas principais:
 
 Tabela
+	
 
 Descrição
 
 users
+	
 
-Armazena os dados dos vendedores/administradores que acessam o sistema.
+Armazena os dados dos vendedores/administradores.
+
+clients
+	
+
+Armazena os dados dos clientes da loja.
+
+categories
+	
+
+Guarda as categorias dos produtos.
 
 products
+	
 
-Catálogo de todos os produtos disponíveis para orçamento.
+Catálogo de todos os produtos disponíveis.
+
+product_images
+	
+
+Armazena o caminho das imagens de cada produto.
+
+price_tiers
+	
+
+Guarda as diferentes escalas de preços por quantidade para cada produto.
+
+payment_methods
+	
+
+Armazena as formas de pagamento pré-definidas.
+
+settings
+	
+
+Guarda as configurações gerais da loja no formato chave-valor.
 
 quotes
+	
 
-Armazena os dados principais de cada orçamento (cliente, vendedor, total, status, hash único).
+Armazena os dados principais de cada orçamento.
 
 quote_product
+	
 
-Tabela pivot que relaciona os produtos e suas quantidades a um orçamento específico.
-
+Tabela pivot que relaciona os produtos e as suas quantidades a um orçamento.
 ⚙️ Instalação e Execução
+
 Para rodar este projeto localmente, siga os passos abaixo:
 
-Clone o repositório:
+    Clone o repositório:
 
-git clone https://github.com/luizgustavorodriguesdev/sistema_orcamento.git
-cd sistema_orcamento
+    git clone https://github.com/luizgustavorodriguesdev/sistema_orcamento.git
+    cd sistema_orcamento
 
-Instale as dependências do Composer:
+    Instale as dependências do Composer:
 
-composer install
+    composer install
 
-Configure o arquivo de ambiente:
+    Configure o ambiente:
 
-Copie .env.example para .env.
+        Copie .env.example para .env.
 
-Gere a chave da aplicação: php artisan key:generate.
+        Gere a chave da aplicação: php artisan key:generate.
 
-Configure as credenciais do seu banco de dados no arquivo .env.
+        Configure as credenciais do seu banco de dados no ficheiro .env.
 
-Execute as migrations:
+    Crie o link de armazenamento:
 
-php artisan migrate
+    php artisan storage:link
 
-Instale as dependências do NPM:
+    Execute as migrations:
 
-npm install
+    php artisan migrate
 
-Compile os assets e inicie o servidor de desenvolvimento:
+    Instale as dependências do NPM:
 
-# Em um terminal
-npm run dev
+    npm install
 
-# Em outro terminal
-php artisan serve
+    Inicie os servidores:
+
+    # Num terminal
+    npm run dev
+
+    # Noutro terminal
+    php artisan serve
 
 Acesse http://localhost:8000 no seu navegador e explore a aplicação!
